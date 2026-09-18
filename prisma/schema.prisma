@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Заявка из формы обратной связи на лендинге.
+/// Одна запись — одно обращение, а не один ребёнок и не один договор.
+model Lead {
+  id String @id @default(uuid())
+
+  /// Имя родителя, как он его написал.
+  name String @db.VarChar(100)
+
+  /// Телефон в виде +374XXXXXXXX — приводит сервис при создании.
+  phone String @db.VarChar(32)
+
+  /// Вопрос или желаемый день визита. В форме поле необязательное.
+  message String? @db.VarChar(2000)
+
+  status LeadStatus @default(NEW)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // список «сначала новые»
+  @@index([createdAt])
+  // список необработанных
+  @@index([status, createdAt])
+}
+
+enum LeadStatus {
+  NEW /// поступила, никто не смотрел
+  CONTACTED /// с родителем связались
+  ARCHIVED /// закрыта: пришли, отказались или дубль
+}
