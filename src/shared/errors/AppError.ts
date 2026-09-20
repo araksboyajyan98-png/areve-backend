@@ -2,6 +2,7 @@ export const ErrorCode = {
   VALIDATION_FAILED: "VALIDATION_FAILED",
   NOT_FOUND: "NOT_FOUND",
   CONFLICT: "CONFLICT",
+  FORBIDDEN: "FORBIDDEN",
   RATE_LIMITED: "RATE_LIMITED",
   INTERNAL: "INTERNAL",
 } as const;
@@ -35,6 +36,9 @@ export class AppError extends Error {
   }
   static conflict(message: string) {
     return new AppError(409, ErrorCode.CONFLICT, message);
+  }
+  static forbidden(message: string) {
+    return new AppError(403, ErrorCode.FORBIDDEN, message);
   }
   static tooManyRequests(message = "Too many requests") {
     return new AppError(429, ErrorCode.RATE_LIMITED, message);

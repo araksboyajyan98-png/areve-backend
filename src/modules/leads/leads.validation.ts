@@ -1,9 +1,6 @@
 import { body } from "express-validator";
 import { isValidPhone } from "../../shared/lib/normalizePhone";
 
-/** Имя скрытого поля-ловушки. Должно совпадать с тем, что рисует фронтенд. */
-export const HONEYPOT_FIELD = "website";
-
 /*
  * На каждое поле — не больше одной записи в details, и текст всегда один и тот
  * же: это ключ, по которому фронтенд достаёт перевод.
@@ -12,6 +9,10 @@ export const HONEYPOT_FIELD = "website";
  * стандартное "Invalid value", а следом isLength добавил бы вторую запись про
  * то же поле. И .withMessage() нужен у каждой проверки — он относится только
  * к предыдущей, а не ко всей цепочке.
+ *
+ * Поля-ловушки здесь нет намеренно: её проверяет catchHoneypot до валидации.
+ * Валидатор на неё отвечал бы отказом с именем поля — то есть выдавал бы
+ * боту, что ловушка существует.
  */
 export const validateCreateLead = [
   body("name")
@@ -22,11 +23,19 @@ export const validateCreateLead = [
     .isLength({ min: 1, max: 100 })
     .withMessage("name"),
 
+  /*
+   * Предел длины обязателен: isValidPhone выбрасывает всё, кроме цифр, поэтому
+   * без него строка на мегабайт с восемью цифрами внутри считалась бы
+   * телефоном, и разбор гонял бы по ней на каждом запросе.
+   */
   body("phone")
     .isString()
     .withMessage("phone")
     .bail()
     .trim()
+    .isLength({ max: 32 })
+    .withMessage("phone")
+    .bail()
     .custom(isValidPhone)
     .withMessage("phone"),
 
@@ -42,7 +51,4 @@ export const validateCreateLead = [
     .trim()
     .isLength({ max: 2000 })
     .withMessage("message"),
-
-  // Ловушку проверяет контроллер, здесь только следим за типом.
-  body(HONEYPOT_FIELD).optional().isString().withMessage(HONEYPOT_FIELD),
 ];

@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const { ErrorCode } = require("../dist/shared/errors/AppError.js");
-const { HONEYPOT_FIELD } = require("../dist/modules/leads/leads.validation.js");
+const { HONEYPOT_FIELD } = require("../dist/modules/leads/leads.honeypot.js");
 
 /*
  * Договор с фронтендом. Репозитории разные, компилятор их не связывает,
@@ -20,6 +20,7 @@ const PUBLISHED_ERROR_CODES = [
   "VALIDATION_FAILED",
   "NOT_FOUND",
   "CONFLICT",
+  "FORBIDDEN",
   "RATE_LIMITED",
   "INTERNAL",
 ];

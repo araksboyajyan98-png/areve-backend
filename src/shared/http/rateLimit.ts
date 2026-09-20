@@ -32,7 +32,7 @@ export function rateLimit({ windowMs, max }: Options): RequestHandler {
   }, windowMs);
   sweeper.unref(); // таймер не должен удерживать процесс при остановке
 
-  return (req: Request, _res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     /*
      * req.ip берётся из сокета, а за прокси — из X-Forwarded-For, но только
      * если в app.ts выставлен trust proxy. Без него все запросы из-за прокси
@@ -49,6 +49,9 @@ export function rateLimit({ windowMs, max }: Options): RequestHandler {
 
     entry.count += 1;
     if (entry.count > max) {
+      // Retry-After: клиент должен знать, когда пробовать снова.
+      const secondsLeft = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+      res.setHeader("Retry-After", String(secondsLeft));
       return next(AppError.tooManyRequests());
     }
 

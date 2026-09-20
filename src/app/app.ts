@@ -5,6 +5,7 @@ import helmet from "helmet";
 import { leadsRoutes } from "../modules/leads";
 import { requestLogger } from "../shared/http/requestLogger";
 import { errorHandler, notFoundHandler } from "../shared/http/errorHandler";
+import { AppError } from "../shared/errors/AppError";
 
 const app: Application = express();
 
@@ -36,7 +37,12 @@ app.use(
     origin(origin, callback) {
       if (!origin) return callback(null, true); // curl, server-to-server
       if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-      return callback(new Error(`CORS: origin ${origin} not allowed`));
+      /*
+       * AppError, а не обычный Error: иначе отказ доходит до errorHandler
+       * как неожиданный сбой и отдаётся как 500. Чужой origin — это не авария
+       * сервера, и мониторинг не должен считать её таковой.
+       */
+      return callback(AppError.forbidden(`Origin ${origin} is not allowed`));
     },
     exposedHeaders: ["X-Request-Id"],
   })

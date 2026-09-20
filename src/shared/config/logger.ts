@@ -3,9 +3,34 @@ import { AppError } from "../errors/AppError";
 
 const isDev = process.env.NODE_ENV === "development";
 
+/*
+ * Ошибка разбора тела запроса содержит его фрагмент.
+ *
+ * Когда JSON битый, движок вставляет в текст ошибки первые байты тела —
+ * а в теле лежат имя и телефон родителя. Правило проекта не допускает их
+ * в логах ни в одном месте, поэтому такие ошибки записываются без текста
+ * и без стека: для разбора достаточно знать, что тело не разобралось.
+ *
+ * body-parser помечает их полем `type` вида entity.*; у обычных ошибок
+ * такого поля нет.
+ */
+const isBodyParseError = (err: Error): boolean => {
+  const candidate = err as Error & { type?: unknown; body?: unknown };
+  return typeof candidate.type === "string" && candidate.type.startsWith("entity.");
+};
+
 /** Цепочка cause обрезается до типа и сообщения: там бывают тексты SQL с аргументами. */
-const errorSerializer = (err: unknown) => {
+export const errorSerializer = (err: unknown) => {
   if (!(err instanceof Error)) return err;
+
+  if (isBodyParseError(err)) {
+    const { type, status, statusCode } = err as Error & {
+      type?: string;
+      status?: number;
+      statusCode?: number;
+    };
+    return { type: err.name, reason: type, status: status ?? statusCode };
+  }
 
   const causes: string[] = [];
   let current: unknown = (err as Error & { cause?: unknown }).cause;
